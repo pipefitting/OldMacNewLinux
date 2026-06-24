@@ -88,7 +88,7 @@ the same license the t2linux wiki uses. In short: reuse and adapt it freely, inc
 commercially, as long as you **credit** the source and release your derivatives under
 the **same license**. The full text is in [`LICENSE`](LICENSE).
 
-© 2026 *[your name or handle here]*. When you publish, replace that with how you'd
+© 2026 *Adam "Pipe" Fitting*. When you publish, replace that with how you'd
 like to be credited.
 
 If you ever pull text or images *from* the t2linux wiki into the guide, that content
