@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviving an Intel Mac as a Modern Linux Machine</title>
+<meta name="description" content="A friendly, source-validated guide to installing Linux on retired Intel Macs (2015–2020), with a full Fedora walkthrough for T2 models.">
+<link rel="icon" type="image/svg+xml" href="mascot-penguincow.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F1F3F5;
+    --surface: #FFFFFF;
+    --surface-2: #F8FAFB;
+    --border: #E1E5EA;
+    --border-strong: #CFD5DC;
+    --ink: #191C21;
+    --muted: #5E6873;
+    --accent: #0B8793;
+    --accent-ink: #086B75;
+    --accent-soft: #E4F2F3;
+    --warn: #BE4338;
+    --warn-ink: #9E332A;
+    --warn-bg: #FBEAE8;
+    --heads-ink: #8A5E16;
+    --heads-bg: #FAF1DF;
+    --tip-bg: #E4F2F3;
+    --term-bg: #1B1E25;
+    --term-surface: #232831;
+    --term-ink: #E7EAEF;
+    --term-muted: #8C95A3;
+    --term-accent: #57D1BE;
+    --term-border: #313844;
+    --shadow: 0 1px 2px rgba(20,28,38,.04), 0 8px 24px rgba(20,28,38,.05);
+    --font-display: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+    --wrap: 1180px;
+    --col: 760px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171C;
+      --surface: #1D2027;
+      --surface-2: #23272F;
+      --border: #2C313A;
+      --border-strong: #3A414C;
+      --ink: #E7E9EE;
+      --muted: #9AA2AE;
+      --accent: #2BBECC;
+      --accent-ink: #59D2DE;
+      --accent-soft: #173238;
+      --warn: #E36B60;
+      --warn-ink: #EE8A80;
+      --warn-bg: #2E1B19;
+      --heads-ink: #E2B774;
+      --heads-bg: #2B2415;
+      --tip-bg: #15292C;
+      --term-bg: #121419;
+      --term-surface: #1B1F27;
+      --term-border: #2A313C;
+      --shadow: 0 1px 2px rgba(0,0,0,.2), 0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  [data-theme="dark"] {
+    --bg: #15171C;
+    --surface: #1D2027;
+    --surface-2: #23272F;
+    --border: #2C313A;
+    --border-strong: #3A414C;
+    --ink: #E7E9EE;
+    --muted: #9AA2AE;
+    --accent: #2BBECC;
+    --accent-ink: #59D2DE;
+    --accent-soft: #173238;
+    --warn: #E36B60;
+    --warn-ink: #EE8A80;
+    --warn-bg: #2E1B19;
+    --heads-ink: #E2B774;
+    --heads-bg: #2B2415;
+    --tip-bg: #15292C;
+    --term-bg: #121419;
+    --term-surface: #1B1F27;
+    --term-border: #2A313C;
+    --shadow: 0 1px 2px rgba(0,0,0,.2), 0 8px 24px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: var(--wrap); margin: 0 auto; padding: 12px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+  .pwr { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); flex: none; }
+  .brand span.small { color: var(--muted); font-weight: 500; font-family: var(--font-body); }
+  .topbar-spacer { flex: 1; }
+  .theme-btn {
+    appearance: none; border: 1px solid var(--border-strong); background: var(--surface);
+    color: var(--ink); width: 38px; height: 34px; border-radius: 9px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+    transition: border-color .15s, transform .1s;
+  }
+  .theme-btn:hover { border-color: var(--accent); }
+  .theme-btn:active { transform: scale(.95); }
+
+  /* ---------- layout ---------- */
+  .shell { max-width: var(--wrap); margin: 0 auto; padding: 0 24px; }
+  .layout { display: grid; grid-template-columns: 240px minmax(0,1fr); gap: 56px; align-items: start; }
+  @media (max-width: 940px) { .layout { grid-template-columns: 1fr; gap: 0; } }
+
+  /* ---------- table of contents ---------- */
+  .toc { position: sticky; top: 84px; align-self: start; padding: 28px 0; }
+  @media (max-width: 940px) { .toc { display: none; } }
+  .toc-label { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); font-weight: 600; margin: 0 0 14px; }
+  .toc a {
+    display: block; color: var(--muted); text-decoration: none; font-size: 14px;
+    padding: 5px 0 5px 14px; border-left: 2px solid var(--border); line-height: 1.4;
+    transition: color .15s, border-color .15s;
+  }
+  .toc a:hover { color: var(--ink); }
+  .toc a.active { color: var(--accent-ink); border-left-color: var(--accent); font-weight: 600; }
+  .toc a.sub { padding-left: 26px; font-size: 13px; }
+
+  /* ---------- content column ---------- */
+  main { padding: 0 0 100px; min-width: 0; }
+  .col { max-width: var(--col); }
+
+  /* hero */
+  .hero { padding: 56px 0 12px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-ink); margin-bottom: 18px; }
+  .eyebrow::before { content: ""; width: 22px; height: 1.5px; background: var(--accent); display: inline-block; }
+  h1 {
+    font-family: var(--font-display); font-weight: 700; letter-spacing: -.025em;
+    font-size: clamp(2.1rem, 5.2vw, 3.4rem); line-height: 1.04; margin: 0 0 20px;
+  }
+  .lede { font-size: 1.18rem; color: var(--muted); margin: 0 0 26px; max-width: 36em; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 100px;
+    padding: 5px 13px; color: var(--muted); font-family: var(--font-mono);
+  }
+  .badge b { color: var(--ink); font-weight: 600; }
+
+  /* identifier (signature) */
+  .identify {
+    margin: 40px 0 8px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 26px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .identify::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 40%, transparent));
+  }
+  .identify h2 { font-family: var(--font-display); font-size: 1.32rem; margin: 4px 0 4px; letter-spacing: -.02em; }
+  .identify p.sub { margin: 0 0 18px; color: var(--muted); font-size: .95rem; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .choices { grid-template-columns: 1fr; } }
+  .choice {
+    text-align: left; cursor: pointer; font-family: var(--font-body); font-size: .92rem;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; color: var(--ink); transition: border-color .15s, background .15s, transform .08s;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .choice:hover { border-color: var(--accent); }
+  .choice:active { transform: translateY(1px); }
+  .choice.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .choice b { font-weight: 600; font-size: .98rem; }
+  .choice span { color: var(--muted); font-size: .83rem; }
+  .verdict {
+    margin-top: 16px; border-radius: 12px; padding: 0; max-height: 0; overflow: hidden;
+    transition: max-height .35s ease, padding .35s ease, margin .35s ease; border: 1px solid transparent;
+  }
+  .verdict.open { max-height: 320px; padding: 18px 18px; border-color: var(--border); background: var(--surface-2); }
+  .verdict h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 1.1rem; }
+  .verdict p { margin: 0 0 14px; color: var(--muted); font-size: .94rem; }
+  .verdict .jump {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600;
+    font-size: .9rem; background: var(--accent); color: #fff; padding: 9px 16px; border-radius: 9px;
+    transition: filter .15s;
+  }
+  .verdict .jump:hover { filter: brightness(1.07); }
+  .verdict .jump.ghost { background: transparent; color: var(--accent-ink); border: 1px solid var(--border-strong); }
+
+  /* sections */
+  section { padding-top: 30px; }
+  .rule { border: none; border-top: 1px solid var(--border); margin: 46px 0 0; }
+  h2.sec {
+    font-family: var(--font-display); font-weight: 600; letter-spacing: -.02em;
+    font-size: 1.85rem; line-height: 1.12; margin: 36px 0 6px; scroll-margin-top: 84px;
+  }
+  .sec-tag { font-family: var(--font-mono); font-size: .76rem; font-weight: 500; color: var(--accent-ink); letter-spacing: .04em; text-transform: uppercase; }
+  h3.phase {
+    font-family: var(--font-display); font-weight: 600; font-size: 1.28rem; letter-spacing: -.015em;
+    margin: 34px 0 4px; scroll-margin-top: 84px; display: flex; align-items: baseline; gap: 12px;
+  }
+  h3.phase .n {
+    font-family: var(--font-mono); font-size: .8rem; color: #fff; background: var(--ink);
+    border-radius: 7px; padding: 3px 8px; font-weight: 500; flex: none; letter-spacing: 0;
+  }
+  h4 { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; margin: 26px 0 4px; letter-spacing: -.01em; }
+  p { margin: 14px 0; }
+  a { color: var(--accent-ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--accent); }
+  strong { font-weight: 600; }
+  ul, ol { margin: 14px 0; padding-left: 22px; }
+  li { margin: 7px 0; padding-left: 4px; }
+  li::marker { color: var(--muted); }
+  ol li::marker { font-family: var(--font-mono); font-size: .9em; }
+
+  /* code blocks */
+  .code {
+    margin: 18px 0; border-radius: 13px; background: var(--term-bg); border: 1px solid var(--term-border);
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .code-head {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px 9px 15px;
+    background: var(--term-surface); border-bottom: 1px solid var(--term-border);
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; display: block; }
+  .dots i:nth-child(1){ background:#E15A52; } .dots i:nth-child(2){ background:#E5B33F; } .dots i:nth-child(3){ background:#54B95B; }
+  .code-ctx { font-family: var(--font-mono); font-size: 12px; color: var(--term-muted); margin-left: 2px; }
+  .code-head .sp { flex: 1; }
+  .copy-btn {
+    font-family: var(--font-mono); font-size: 12px; cursor: pointer; border: 1px solid var(--term-border);
+    background: transparent; color: var(--term-muted); padding: 4px 11px; border-radius: 7px;
+    display: inline-flex; align-items: center; gap: 6px; transition: color .15s, border-color .15s, background .15s;
+  }
+  .copy-btn:hover { color: var(--term-ink); border-color: var(--term-accent); }
+  .copy-btn.done { color: #0a0c10; background: var(--term-accent); border-color: var(--term-accent); }
+  .code pre {
+    margin: 0; padding: 15px 16px; overflow-x: auto; font-family: var(--font-mono);
+    font-size: 13.5px; line-height: 1.6; color: var(--term-ink); -webkit-font-smoothing: auto;
+  }
+  .code pre::-webkit-scrollbar { height: 8px; }
+  .code pre::-webkit-scrollbar-thumb { background: var(--term-border); border-radius: 8px; }
+  code:not(pre code) {
+    font-family: var(--font-mono); font-size: .87em; background: var(--surface-2);
+    border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--accent-ink);
+  }
+
+  /* callouts */
+  .callout { margin: 20px 0; border-radius: 12px; padding: 15px 18px 15px 17px; border: 1px solid var(--border); background: var(--surface); position: relative; }
+  .callout .ct { font-family: var(--font-display); font-weight: 600; font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+  .callout p { margin: 6px 0 0; font-size: .96rem; }
+  .callout p:first-of-type { margin-top: 0; }
+  .callout.warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 35%, var(--border)); }
+  .callout.warn .ct { color: var(--warn-ink); }
+  .callout.heads { background: var(--heads-bg); border-color: color-mix(in srgb, var(--heads-ink) 30%, var(--border)); }
+  .callout.heads .ct { color: var(--heads-ink); }
+  .callout.tip { background: var(--tip-bg); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
+  .callout.tip .ct { color: var(--accent-ink); }
+  .callout.note { background: var(--surface-2); }
+  .callout.note .ct { color: var(--muted); }
+
+  /* table */
+  .tbl-wrap { margin: 20px 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: .94rem; min-width: 460px; }
+  th, td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface-2); font-weight: 600; font-family: var(--font-display); font-size: .9rem; }
+  tr:last-child td { border-bottom: none; }
+  td .yes { color: var(--accent-ink); font-weight: 600; }
+  td .no { color: var(--muted); font-weight: 600; }
+  tbody tr.hl td { background: var(--accent-soft); }
+
+  /* misc */
+  .spec { display: grid; grid-template-columns: 150px 1fr; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 18px 0; font-size: .94rem; }
+  .spec div { padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  .spec div:nth-child(odd) { background: var(--surface-2); font-weight: 600; }
+  .spec div:nth-last-child(1), .spec div:nth-last-child(2) { border-bottom: none; }
+  @media (max-width: 480px){ .spec { grid-template-columns: 120px 1fr; } }
+
+  footer { border-top: 1px solid var(--border); margin-top: 60px; padding: 32px 0 10px; color: var(--muted); font-size: .9rem; }
+  footer h2 { font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); margin: 0 0 12px; }
+  footer a { color: var(--accent-ink); }
+  footer ul { padding-left: 20px; }
+  .fineprint { margin-top: 22px; font-size: .82rem; line-height: 1.55; }
+
+  .conf { font-size: .86rem; color: var(--muted); font-style: italic; margin: 12px 0; padding-left: 14px; border-left: 2px solid var(--border-strong); }
+  .footnote { font-size: .87rem; line-height: 1.6; color: var(--muted); margin: 14px 0 4px; padding: 13px 16px; background: var(--surface-2); border: 1px dashed var(--border-strong); border-radius: 10px; }
+  .footnote strong { color: var(--ink); }
+  .footnote code { font-size: .85em; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="pwr" aria-hidden="true"></span> Old Mac, New Linux <span class="small">· v1.2</span></div>
+    <div class="topbar-spacer"></div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle light or dark theme" title="Toggle theme">◐</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="layout">
+
+    <!-- TOC -->
+    <nav class="toc" aria-label="Table of contents">
+      <p class="toc-label">On this page</p>
+      <a href="#identify">Identify your Mac</a>
+      <a href="#track-a">Track A · Non-T2 (2015–17)</a>
+      <a href="#track-b">Track B · T2 (2018–20)</a>
+      <a href="#phase1" class="sub">1 · Disable Secure Boot</a>
+      <a href="#phase2" class="sub">2 · Get & flash the ISO</a>
+      <a href="#phase3" class="sub">3 · Boot the installer</a>
+      <a href="#phase4" class="sub">4 · Install Fedora</a>
+      <a href="#phase5" class="sub">5 · First-boot checks</a>
+      <a href="#phase6" class="sub">6 · Fix deep sleep</a>
+      <a href="#other-t2" class="sub">+ Ubuntu, flavors &amp; Mint</a>
+      <a href="#gnome">Appendix · GNOME for Mac users</a>
+      <a href="#desktops">Desktops & expectations</a>
+      <a href="#help">Help & sources</a>
+    </nav>
+
+    <main>
+      <div class="col">
+
+        <!-- HERO -->
+        <header class="hero">
+          <div class="eyebrow">Reuse, don't retire</div>
+          <h1>Reviving an Intel Mac as a Modern Linux Machine</h1>
+          <p class="lede">Got an Intel Mac that macOS has left behind? Linux can give it years more life. This is the map — and one path on it comes with a full, validated walkthrough.</p>
+          <div class="meta-row">
+            <span class="badge"><b>Version</b> 1.2</span>
+            <span class="badge"><b>Updated</b> 2026-06-24</span>
+            <span class="badge"><b>Scope</b> Intel Macs 2015–2020</span>
+          </div>
+
+          <!-- SIGNATURE: interactive identifier -->
+          <div class="identify" id="identify">
+            <span class="code-ctx" style="color:var(--accent-ink);font-family:var(--font-mono);font-size:12px;font-weight:600;">START HERE</span>
+            <h2>Which Mac do you have?</h2>
+            <p class="sub">One detail decides whether this is an afternoon or a weekend: whether your Mac has Apple's T2 chip. Pick the closest match.</p>
+            <div class="choices" id="choices">
+              <button class="choice" data-result="b"><b>MacBook Air / Pro, 2018–2020</b><span>Intel models (not the M1 2020)</span></button>
+              <button class="choice" data-result="b"><b>iMac 2020 · iMac Pro · Mac mini 2018 · Mac Pro 2019</b><span>The T2 desktops</span></button>
+              <button class="choice" data-result="a"><b>Any Mac from 2015–2017</b><span>Incl. 2016–17 Touch Bar Pros</span></button>
+              <button class="choice" data-result="s"><b>Apple Silicon (M1 / M2 / M3 / M4)</b><span>"Chip: Apple M…" in About This Mac</span></button>
+            </div>
+            <div class="verdict" id="verdict" role="status" aria-live="polite">
+              <h3 id="verdict-h"></h3>
+              <p id="verdict-p"></p>
+              <a class="jump" id="verdict-a" href="#"></a>
+            </div>
+          </div>
+        </header>
+
+        <!-- IDENTIFY DETAIL -->
+        <section id="identify-detail">
+          <h2 class="sec"><span class="sec-tag">The fork</span><br>T2 or not — that's the whole question</h2>
+          <p>Every Intel Mac in scope falls into one of two camps, and which camp yours is in sets the difficulty:</p>
+          <ul>
+            <li><strong>Non-T2 Macs (roughly 2015–2017)</strong> behave like ordinary PCs. Boot a normal Linux installer and go.</li>
+            <li><strong>T2 Macs (2018–2020)</strong> have a security chip that locks booting and needs special drivers for the keyboard, trackpad, audio, and Wi-Fi. Doable, but it's a project — and it's the one with the full walkthrough below.</li>
+          </ul>
+
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Model</th><th>T2 chip?</th></tr></thead>
+              <tbody>
+                <tr><td>MacBook Pro 2018–2020 <em>(except 13″ M1, 2020)</em></td><td><span class="yes">Yes → Track B</span></td></tr>
+                <tr><td>MacBook Air 2018–2020 <em>(except M1, 2020)</em></td><td><span class="yes">Yes → Track B</span></td></tr>
+                <tr><td>iMac (Retina 5K, 27″, 2020) and iMac Pro (2017)</td><td><span class="yes">Yes → Track B</span></td></tr>
+                <tr><td>Mac mini 2018</td><td><span class="yes">Yes → Track B</span></td></tr>
+                <tr><td>Mac Pro 2019</td><td><span class="yes">Yes → Track B</span></td></tr>
+                <tr class="hl"><td>Any other Intel Mac (2015, 2016, 2017)</td><td><span class="no">No → Track A</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>Or ask the machine directly</h4>
+          <p>Hold <strong>Option</strong> while choosing Apple menu → <strong>System Information</strong>. In the sidebar, click <strong>Controller</strong> or <strong>iBridge</strong>. If it shows "Apple T2 chip," you have a T2 Mac.</p>
+
+          <div class="callout heads">
+            <p class="ct">One wrinkle</p>
+            <p>The 2016–2017 MacBook Pro with Touch Bar has an earlier <strong>T1</strong> chip, not a T2. The T1 only runs the Touch Bar and Touch ID; it does <strong>not</strong> lock booting. So those install the easy way (Track A) — the Touch Bar just won't work without extra effort, which most people happily skip.</p>
+          </div>
+
+          <div class="callout tip">
+            <p class="ct">Apple Silicon?</p>
+            <p>If About This Mac lists a "Chip" like Apple M1/M2/M3/M4, this guide isn't for you. The people to see are <a href="https://asahilinux.org" target="_blank" rel="noopener">Asahi Linux</a>, who have done remarkable work on Apple Silicon. Different hardware, different rules.</p>
+          </div>
+        </section>
+
+        <hr class="rule">
+
+        <!-- TRACK A -->
+        <section id="track-a">
+          <h2 class="sec"><span class="sec-tag">Track A · the easy path</span><br>Non-T2 Macs (2015–2017)</h2>
+          <p>To Linux, these are basically normal Intel laptops. No Secure Boot to disable, no patched kernel. The whole process:</p>
+          <ol>
+            <li><strong>Back up anything you care about.</strong> Installing wipes the drive.</li>
+            <li><strong>Pick a distro and download its standard ISO.</strong> Good choices: <strong>Fedora Workstation</strong> or <strong>Ubuntu</strong> (modern, GNOME); <strong>Linux Mint</strong> or <strong>Pop!_OS</strong> (especially friendly for newcomers). Mint's <strong>XFCE</strong> edition is the lightest, ideal for the oldest or lowest-RAM machines.</li>
+            <li><strong>Make a USB installer</strong> with <a href="https://www.balena.io/etcher/" target="_blank" rel="noopener">Etcher</a>, Rufus (Windows), or <code>dd</code>.</li>
+            <li><strong>Boot it:</strong> hold <strong>Option (⌥)</strong> at startup, pick the <strong>EFI Boot</strong> USB icon, run the installer, and choose to <strong>erase the disk</strong>.</li>
+            <li><strong>Fix the two usual quirks afterward</strong> (below).</li>
+          </ol>
+
+          <h4>Wi-Fi (the most common one)</h4>
+          <p>Many Macs use Broadcom Wi-Fi chips that need a proprietary driver. Have a wired or USB-tethered connection for the first boot, then install it.</p>
+          <div class="code" data-ctx="Fedora — install Broadcom driver">
+<pre>sudo dnf install akmod-wl</pre>
+          </div>
+          <div class="code" data-ctx="Ubuntu / Mint — install Broadcom driver">
+<pre>sudo apt install bcmwl-kernel-source</pre>
+          </div>
+          <p>On <strong>Ubuntu and Mint</strong> the friendliest route is to let the installer do it: tick <strong>"Install third-party software for graphics and Wi-Fi hardware"</strong> during setup and it usually handles the Broadcom driver for you. If you skipped that, run it afterward from a GUI — <strong>Driver Manager</strong> on Mint, or <strong>Additional Drivers</strong> (inside Software &amp; Updates) on Ubuntu — and pick the Broadcom <code>wl</code> driver it offers. The command above is the manual equivalent if you'd rather use the terminal.</p>
+          <div class="callout note">
+            <p class="ct">Flag</p>
+            <p>The exact package depends on your specific Broadcom chip. A few older Macs use a chip served by <code>b43</code> / <code>firmware-b43-installer</code> instead of <code>wl</code>. If one doesn't connect, search your model plus "Broadcom Linux" for the right one.</p>
+          </div>
+
+          <h4>Graphics</h4>
+          <p>Intel and AMD graphics generally just work. The 15-inch MacBook Pros with a discrete GPU can need extra attention; the 13-inch and Air models with Intel-only graphics are the simplest. If a dual-GPU machine misbehaves, disabling the discrete GPU is a common fix. And if the Mac won't boot the installed system, the <a href="https://wiki.t2linux.org/guides/refind/" target="_blank" rel="noopener">rEFInd</a> boot manager is the standard remedy.</p>
+
+          <div class="callout tip">
+            <p class="ct">What works out of the box</p>
+            <p>Keyboard, trackpad, webcam, audio, and sleep are generally all fine on these. Wi-Fi drivers are the main hurdle, and a minor one. This track is genuinely approachable for a first-time Linux installer.</p>
+          </div>
+        </section>
+
+        <hr class="rule">
+
+        <!-- TRACK B -->
+        <section id="track-b">
+          <h2 class="sec"><span class="sec-tag">Track B · the involved path</span><br>T2 Macs (2018–2020): a Fedora walkthrough</h2>
+          <p>The T2 chip blocks non-Apple operating systems from booting and needs special drivers (via <code>apple-bce</code>) before the keyboard, trackpad, audio, and Wi-Fi work. You can't just flash a stock ISO and expect working hardware. The smoothest distro on T2 is <strong>Fedora</strong>, because the <a href="https://wiki.t2linux.org" target="_blank" rel="noopener">t2linux</a> project ships a prebuilt T2 ISO with the patched kernel baked in and Wi-Fi working on first boot.</p>
+
+          <div class="callout warn">
+            <p class="ct">⚠ Critical — this erases everything</p>
+            <p>This wipes the entire internal SSD. macOS, your files, and settings are permanently destroyed. Back up first. Unlike some T2 routes, you do <strong>not</strong> need to extract Wi-Fi firmware beforehand — the T2 Fedora ISO ships it.</p>
+          </div>
+
+          <h4>The honest hardware ceiling (true on any distro)</h4>
+          <ul>
+            <li><strong>Trackpad</strong> works but lacks force touch and palm rejection, so it won't feel fully macOS-grade.</li>
+            <li><strong>Audio</strong> works but can be quirky switching between speakers and mic.</li>
+            <li><strong>Bluetooth</strong> glitches on 2.4 GHz Wi-Fi — use 5 GHz, or turn Wi-Fi off while using it.</li>
+            <li><strong>Deep sleep</strong> needs the workaround in Phase 6.</li>
+            <li><strong>Touch ID</strong> does not work on Linux.</li>
+          </ul>
+          <p>Integrated-graphics models (the Airs and 13-inch Pros) are the friendliest T2 machines, since they avoid the discrete-GPU complications.</p>
+
+          <h3 class="phase" id="phase1"><span class="n">01</span> Disable Secure Boot</h3>
+          <p>The T2 chip blocks non-Apple operating systems and external boot media by default. Turn that off in Recovery.</p>
+          <ol>
+            <li>Shut the Mac down completely.</li>
+            <li>Power on and immediately hold <strong>Command (⌘) + R</strong> until the Apple logo or spinning globe appears.</li>
+            <li>Pick your admin account and enter your password.</li>
+            <li>Menu bar → <strong>Utilities</strong> → <strong>Startup Security Utility</strong>. Authenticate again if asked.</li>
+            <li>Set <strong>Secure Boot</strong> to <strong>No Security</strong>.</li>
+            <li>Set <strong>Allowed Boot Media</strong> to <strong>Allow booting from external or removable media</strong>.</li>
+            <li>Close the utility, then  → <strong>Shut Down</strong>.</li>
+          </ol>
+
+          <h3 class="phase" id="phase2"><span class="n">02</span> Get &amp; flash the T2 Fedora ISO</h3>
+          <h4>2a · Download the right files</h4>
+          <p>Go to the <a href="https://github.com/t2linux/fedora-iso/releases" target="_blank" rel="noopener">t2linux Fedora releases page</a> and use the newest release marked <strong>Latest</strong>. Skip any release flagged as broken in its notes. Choose <strong>Workstation</strong> (GNOME) — the KDE build is a different desktop you can ignore.</p>
+          <div class="callout heads">
+            <p class="ct">Heads-up · the ISO comes in two parts</p>
+            <p>GitHub limits each release file to 2 GB, and the live ISO is larger than that (Workstation is ~2.66 GB). So it's split into a <code>.iso.00</code> part and a <code>.iso.01</code> part. <strong>These are not two different ISOs to choose between. They are two halves of one file, and you need both.</strong> You rejoin them into one <code>.iso</code> before flashing.</p>
+          </div>
+          <p>For Workstation, download all three: <code>…iso.00</code>, <code>…iso.01</code>, and <code>…iso.sha256</code> (the checksum).</p>
+          <div class="callout tip">
+            <p class="ct">Prefer no command line?</p>
+            <p>The <a href="https://github.com/sharpenedblade/t2linux-installer/releases/latest" target="_blank" rel="noopener">t2linux Installer app</a> downloads and rejoins the ISO for you automatically. Use it and skip to Phase 3.</p>
+          </div>
+
+          <h4>2b · Rejoin the two parts</h4>
+          <p>Put both parts in the same folder, open a terminal there, and concatenate them in order (<code>.00</code> first). Substitute the actual version you downloaded.</p>
+          <div class="code" data-ctx="macOS or Linux">
+<pre>cat Fedora-t2linux-Workstation-Live-*.iso.00 \
+    Fedora-t2linux-Workstation-Live-*.iso.01 \
+    > Fedora-t2linux-Workstation-Live.x86_64.iso</pre>
+          </div>
+          <div class="code" data-ctx="Windows — Command Prompt, not PowerShell †">
+<pre>copy /b Fedora-t2linux-Workstation-Live-44.0.x86_64.iso.00 + Fedora-t2linux-Workstation-Live-44.0.x86_64.iso.01 Fedora-t2linux-Workstation-Live-44.0.x86_64.iso</pre>
+          </div>
+          <p class="footnote"><strong>† For the PC doing the prep work.</strong> You went and got a Mac — and yet here you are, back at the Windows box to handle the fussy bit. Two house rules over here: it's Command Prompt, <em>not</em> PowerShell (PowerShell greets <code>copy /b</code> with the bureaucratic equivalent of a raised eyebrow), and you'll type the version number out by hand, since the breezy <code>*</code> wildcard the macOS and Linux folks get to enjoy didn't ship in this edition. You're nearly a Linux user now, though. We're proud of you.</p>
+
+          <h4>2c · Verify the rejoined ISO</h4>
+          <p>The <code>.sha256</code> is the checksum of the <strong>complete, rejoined</strong> ISO. Check it before flashing — a mismatch means a broken installer.</p>
+          <div class="code" data-ctx="macOS — compare the two hashes by eye">
+<pre>shasum -a 256 Fedora-t2linux-Workstation-Live*.iso
+cat Fedora-t2linux-Workstation-Live-*.iso.sha256</pre>
+          </div>
+          <div class="code" data-ctx="Linux — auto-checks and prints OK">
+<pre>sha256sum -c Fedora-t2linux-Workstation-Live-*.iso.sha256</pre>
+          </div>
+
+          <h4>2d · Flash to USB</h4>
+          <p>Flash the <strong>rejoined <code>.iso</code></strong>, not the parts. Use <a href="https://www.balena.io/etcher/" target="_blank" rel="noopener">Etcher</a> / <a href="https://gitlab.com/bztsrc/usbimager/" target="_blank" rel="noopener">USBImager</a>, or <code>dd</code> on macOS:</p>
+          <div class="code" data-ctx="macOS — dd (replace diskX with your USB)">
+<pre>diskutil list
+sudo diskutil unmountDisk /dev/diskX
+sudo dd if=/path/to/fedora-t2.iso of=/dev/rdiskX bs=1m</pre>
+          </div>
+          <p class="conf">Confidence: high. The split-and-rejoin mechanism follows from the <code>.00</code>/<code>.01</code> naming and sizes against GitHub's 2 GB per-file limit. The wiki doesn't document the join, which is exactly why the checksum step is here.</p>
+
+          <h3 class="phase" id="phase3"><span class="n">03</span> Boot the installer</h3>
+          <ol>
+            <li>Plug the installer USB (and your USB-C hub) into the Mac.</li>
+            <li>Power on while holding <strong>Option (⌥)</strong> to reach the macOS Startup Manager.</li>
+            <li>Select the orange <strong>EFI Boot</strong> icon and press Return. If two appear, try the rightmost first.</li>
+            <li>At the GRUB menu, choose the default boot/install option and press Enter.</li>
+          </ol>
+          <div class="callout heads">
+            <p class="ct">If boot stalls before the desktop</p>
+            <p>First suspect the <strong>USB-C adapter</strong> — a flaky one is the most common cause; swap it. If it's a GRUB/NVRAM write failure, highlight the boot entry, press <strong>e</strong>, add <code>efi=noruntime</code> to the kernel line, and press <strong>F10</strong> to boot.</p>
+          </div>
+
+          <h3 class="phase" id="phase4"><span class="n">04</span> Install Fedora (full wipe)</h3>
+          <p>Fedora's installer (Anaconda) is a little less hand-holding at the disk step, and its UI shifts between releases, so this describes the goal rather than exact labels.</p>
+          <ol>
+            <li>Launch the installer; set language and keyboard.</li>
+            <li>At <strong>Installation Destination</strong>, select the internal NVMe disk. Choose the option that <strong>erases all existing partitions / uses the entire disk</strong>, and let Fedora auto-partition (Btrfs is the sensible default).</li>
+            <li>Want encryption? Enable <strong>LUKS</strong> here.</li>
+            <li>Begin install, set your user account, and when it finishes, reboot and remove the USB. Hold <strong>Option</strong> → <strong>EFI Boot</strong> if it doesn't boot straight in.</li>
+          </ol>
+          <p class="conf">Confidence: high on the approach; medium on exact installer wording. If a label doesn't match, look for the equivalent "use entire disk / erase everything" choice.</p>
+
+          <h3 class="phase" id="phase5"><span class="n">05</span> First-boot checks</h3>
+          <ul>
+            <li><strong>Wi-Fi</strong> should appear and connect. If it somehow doesn't, follow the <a href="https://wiki.t2linux.org/guides/wifi-bluetooth/" target="_blank" rel="noopener">Wi-Fi guide</a> (after a full wipe that means the "download a macOS recovery image" method).</li>
+            <li><strong>Audio</strong> — test speakers and headphones; expect occasional quirks.</li>
+            <li><strong>Bluetooth</strong> — keep Wi-Fi on 5 GHz to avoid the 2.4 GHz glitch.</li>
+            <li><strong>Update</strong> everything:</li>
+          </ul>
+          <div class="code" data-ctx="Fedora Terminal">
+<pre>sudo dnf upgrade --refresh</pre>
+          </div>
+
+          <h3 class="phase" id="phase6"><span class="n">06</span> Make deep sleep reliable <span style="font-size:.7em;color:var(--muted);font-weight:500;">(optional)</span></h3>
+          <p>S3 suspend has been broken at the driver level since macOS Sonoma, but Fedora supports the documented workaround: a small service that unloads <code>apple-bce</code> before sleep and reloads it after.</p>
+          <p>First confirm the kernel allows force-unloading modules (you want <code>=y</code>), and check where the tools live:</p>
+          <div class="code" data-ctx="Fedora Terminal">
+<pre>grep "CONFIG_MODULE_FORCE_UNLOAD" /boot/config-$(uname -r)
+which modprobe
+which rmmod</pre>
+          </div>
+          <p>Create <code>/etc/systemd/system/suspend-fix-t2.service</code> with this content (adjust the paths if <code>which</code> showed something other than <code>/usr/sbin</code>):</p>
+          <div class="code" data-ctx="systemd unit file">
+<pre>[Unit]
+Description=Disable and Re-Enable Apple BCE Module (and Wi-Fi)
+Before=sleep.target
+StopWhenUnneeded=yes
+
+[Service]
+User=root
+Type=oneshot
+RemainAfterExit=yes
+
+#ExecStart=/usr/sbin/modprobe -r brcmfmac_wcc
+#ExecStart=/usr/sbin/modprobe -r brcmfmac
+ExecStart=/usr/sbin/rmmod -f apple-bce
+
+ExecStop=/usr/sbin/modprobe apple-bce
+#ExecStop=/usr/sbin/modprobe brcmfmac
+#ExecStop=/usr/sbin/modprobe brcmfmac_wcc
+
+[Install]
+WantedBy=sleep.target</pre>
+          </div>
+          <p>Enable it, then test by suspending and resuming:</p>
+          <div class="code" data-ctx="Fedora Terminal">
+<pre>sudo systemctl enable suspend-fix-t2.service</pre>
+          </div>
+          <p>If Wi-Fi is dead after resume, edit the file, uncomment the four <code>brcmfmac</code> lines, and reboot.</p>
+          <p class="conf">Confidence: high. From the t2linux Basic Setup guide, which lists this workaround as working on Fedora. Verify the binary paths with the <code>which</code> commands above.</p>
+
+          <h3 class="phase" id="other-t2"><span class="n">+</span> Other T2 distros: Ubuntu, its flavors &amp; Mint</h3>
+          <p>Fedora is this guide's pick because it's the smoothest on T2, but it isn't the only supported option. The t2linux project also ships prebuilt T2 ISOs for <strong>Ubuntu</strong> and its flavors (Kubuntu, Ubuntu Budgie, MATE, Cinnamon, Unity, Xubuntu) and for <strong>Linux Mint</strong>. If you'd rather run one of those, you can.</p>
+          <ul>
+            <li><strong>Ubuntu and flavors:</strong> <a href="https://github.com/t2linux/T2-Ubuntu/releases/latest" target="_blank" rel="noopener">T2-Ubuntu releases</a></li>
+            <li><strong>Linux Mint:</strong> <a href="https://github.com/t2linux/T2-Mint/releases/latest" target="_blank" rel="noopener">T2-Mint releases</a></li>
+          </ul>
+          <p>Wi-Fi and Bluetooth usually work after install, with a <code>get-apple-firmware</code> fallback if not. But go in knowing the three ways these are rougher than Fedora on T2:</p>
+          <div class="callout heads">
+            <p class="ct">Three honest trade-offs vs Fedora</p>
+            <p><strong>1 · GRUB often won't boot from the Mac Startup Manager.</strong> Many Ubuntu/Mint users have to install the <a href="https://wiki.t2linux.org/guides/refind/" target="_blank" rel="noopener">rEFInd boot manager</a> to boot at all — an extra step Fedora usually avoids.</p>
+            <p><strong>2 · Manual partitioning is required.</strong> The installer makes you use the "Something else" option and lay out the partition by hand, which is more error-prone than Fedora's guided erase.</p>
+            <p><strong>3 · The deep-sleep fix doesn't work here.</strong> The Phase 6 suspend workaround only works on Fedora and Arch-based distros, so on Ubuntu/Mint deep sleep stays broken.</p>
+          </div>
+          <p>If those are acceptable to you, follow t2linux's own <a href="https://wiki.t2linux.org/distributions/ubuntu/installation/" target="_blank" rel="noopener">Ubuntu &amp; Mint install page</a> for the full steps. The Phase 1 (Secure Boot) and Phase 3 (booting) steps above still apply unchanged.</p>
+        </section>
+
+        <hr class="rule">
+
+        <!-- GNOME APPENDIX -->
+        <section id="gnome">
+          <h2 class="sec"><span class="sec-tag">Appendix</span><br>GNOME for a macOS refugee</h2>
+          <p>GNOME and macOS share more DNA than you'd expect — single top bar, full-screen app overview, spaces/workspaces. The friction is in defaults and muscle memory. Here's how to ease it.</p>
+
+          <h4>1 · The mental-model translation</h4>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>macOS habit</th><th>GNOME equivalent</th></tr></thead>
+              <tbody>
+                <tr><td>Spotlight (⌘-Space)</td><td>Press <strong>Super</strong> (the ⌘ key), start typing</td></tr>
+                <tr><td>Mission Control</td><td>Press <strong>Super</strong>, or three-finger swipe up</td></tr>
+                <tr><td>Spaces / desktops</td><td>Workspaces (three-finger swipe left/right)</td></tr>
+                <tr><td>The Dock</td><td>Inside the overview by default (we'll pin a real one)</td></tr>
+                <tr><td>Screenshot (⌘-Shift-4)</td><td><strong>Print Screen</strong> opens the screenshot tool</td></tr>
+                <tr><td>Per-app menu bar</td><td>Single top bar; app menus live in each window's header</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4>2 · Five settings to flip on day one</h4>
+          <p>In <strong>Settings → Mouse &amp; Touchpad</strong>, turn on <strong>Tap to click</strong> and confirm <strong>Natural scrolling</strong>. Then a couple via terminal:</p>
+          <div class="code" data-ctx="GNOME — window buttons on the left, macOS-style">
+<pre>gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:appmenu'
+gsettings set org.gnome.desktop.peripherals.touchpad tap-to-click true</pre>
+          </div>
+
+          <h4>3 · The Command key (the big one)</h4>
+          <p><strong>Tier 1, low-agony (try first):</strong> make the ⌘ (Super) key <em>also</em> act as Control, so ⌘-C / ⌘-V / ⌘-Tab work from muscle memory while your real Control key stays intact (keeping the terminal sane):</p>
+          <div class="code" data-ctx="GNOME — additive Command→Control mapping">
+<pre>gsettings set org.gnome.desktop.input-sources xkb-options "['altwin:ctrl_win']"</pre>
+          </div>
+          <p>This is additive, not a swap — that's why it's the gentle option. Test a few shortcuts; exact behavior varies by app.</p>
+          <div class="callout note">
+            <p class="ct">Tier 2 · only if Tier 1 isn't enough</p>
+            <p>Use the <code>keyd</code> daemon for a true system-level swap (works under Wayland). The tradeoff: a hard Super-to-Control swap muddies the terminal. Treat it as a project, not a quick toggle. <code>keyd</code> may need a COPR repo on Fedora rather than the default repos.</p>
+          </div>
+
+          <h4>4 · Make the Retina screen look right</h4>
+          <p>Unlock fractional scaling (125%, 150%) under Wayland, then pick the in-between option in <strong>Settings → Displays</strong>. 150% is the usual sweet spot for a 13-inch Retina panel.</p>
+          <div class="code" data-ctx="GNOME — enable fractional scaling">
+<pre>gsettings set org.gnome.mutter experimental-features "['scale-monitor-framebuffer']"</pre>
+          </div>
+
+          <h4>5 · A real dock and a few extensions</h4>
+          <p>Enable full Flathub, then install the Extension Manager:</p>
+          <div class="code" data-ctx="Fedora Terminal">
+<pre>flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install flathub com.mattjakeman.ExtensionManager</pre>
+          </div>
+          <p>From there, a sane starter set: <strong>Dash to Dock</strong> (always-visible macOS-style dock), <strong>AppIndicator support</strong> (restores tray icons), <strong>Blur my Shell</strong> (frosted look), and <strong>Just Perfection</strong> (fine-tuning). None is load-bearing; if one shows incompatible with your GNOME version, skip it.</p>
+        </section>
+
+        <hr class="rule">
+
+        <!-- DESKTOPS & EXPECTATIONS -->
+        <section id="desktops">
+          <h2 class="sec"><span class="sec-tag">Orientation</span><br>Desktops &amp; realistic expectations</h2>
+          <h4>Picking a desktop</h4>
+          <ul>
+            <li><strong>GNOME</strong> (Fedora/Ubuntu default): clean, cohesive; its overview feels natural from macOS.</li>
+            <li><strong>KDE Plasma</strong>: the most customizable, easiest to tune toward a macOS look.</li>
+            <li><strong>Cinnamon</strong> (Mint): familiar, traditional menu-and-taskbar desktop.</li>
+            <li><strong>XFCE</strong>: lightweight and fast — best for the oldest or lowest-RAM machines.</li>
+          </ul>
+          <p>Unsure? GNOME on Fedora (newer hardware) or Cinnamon on Mint (older hardware) are safe, well-trodden defaults.</p>
+          <h4>Realistic expectations</h4>
+          <ul>
+            <li>A 2015 MacBook with a light desktop can feel genuinely snappy again.</li>
+            <li>The main first-boot hurdle is <strong>Wi-Fi drivers</strong> on non-T2, and the <strong>patched-kernel setup</strong> on T2. Plan a wired/USB connection for setup.</li>
+            <li>A few Apple-specific features never fully work on Linux — mainly <strong>Touch ID</strong> and fingerprint on T2, and occasionally the webcam on certain machines.</li>
+            <li><strong>It's reversible.</strong> You can reinstall macOS later through Internet Recovery, and on a T2 Mac you can re-enable Secure Boot.</li>
+          </ul>
+        </section>
+
+        <!-- FOOTER -->
+        <footer id="help">
+          <h2>Help &amp; sources</h2>
+          <ul>
+            <li><strong>Non-T2 Macs:</strong> your distro's forums and docs; the Arch Wiki and Ubuntu community pages have great Mac-specific troubleshooting.</li>
+            <li><strong>T2 Macs:</strong> <a href="https://wiki.t2linux.org" target="_blank" rel="noopener">wiki.t2linux.org</a> and the t2linux Discord / Matrix.</li>
+            <li><strong>Apple Silicon:</strong> <a href="https://asahilinux.org" target="_blank" rel="noopener">asahilinux.org</a>.</li>
+          </ul>
+          <p style="margin-top:18px;"><strong>Validated against:</strong>
+            <a href="https://support.apple.com/en-us/103265" target="_blank" rel="noopener">Apple's T2 model list</a>,
+            the <a href="https://wiki.t2linux.org" target="_blank" rel="noopener">t2linux wiki</a>,
+            <a href="https://asahilinux.org" target="_blank" rel="noopener">Asahi Linux</a>, and
+            <a href="https://rpmfusion.org" target="_blank" rel="noopener">RPM Fusion</a>.</p>
+          <p class="fineprint">Hardware support evolves — for the T2 track especially, check the t2linux wiki for the current state before you begin. Confidence is high on the T2/non-T2 split and the Apple model list; the Broadcom Wi-Fi package names are the most chip-dependent detail, so verify against your specific model if the first attempt doesn't connect. · <strong>Version 1.2 · Updated 2026-06-24.</strong> <em>v1.2: a gentle word for Windows users in Phase 2b. v1.1: added Ubuntu/flavors &amp; Mint T2 options and fuller non-T2 driver guidance.</em> This page works offline — save it and keep it open while you install.</p>
+        </footer>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- Theme toggle (in-memory only; defaults to system) ----
+  var themeBtn = document.getElementById('themeBtn');
+  var root = document.documentElement;
+  themeBtn.addEventListener('click', function () {
+    var current = root.getAttribute('data-theme');
+    var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (!current) { root.setAttribute('data-theme', systemDark ? 'light' : 'dark'); }
+    else if (current === 'dark') { root.setAttribute('data-theme', 'light'); }
+    else { root.setAttribute('data-theme', 'dark'); }
+  });
+
+  // ---- Copy buttons on every code block ----
+  document.querySelectorAll('.code').forEach(function (block) {
+    var pre = block.querySelector('pre');
+    if (!pre) return;
+    var ctx = block.getAttribute('data-ctx') || 'Terminal';
+    var head = document.createElement('div');
+    head.className = 'code-head';
+    head.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>'
+      + '<span class="code-ctx">' + ctx.replace(/</g,'&lt;') + '</span>'
+      + '<span class="sp"></span>'
+      + '<button class="copy-btn" type="button" aria-label="Copy to clipboard">Copy</button>';
+    block.insertBefore(head, pre);
+    var btn = head.querySelector('.copy-btn');
+    btn.addEventListener('click', function () {
+      var text = pre.innerText;
+      var done = function () {
+        btn.textContent = 'Copied ✓';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('done'); }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(function () { fallback(text, done); });
+      } else { fallback(text, done); }
+    });
+  });
+  function fallback(text, done) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  // ---- Interactive identifier ----
+  var data = {
+    a: { h: "Non-T2 Mac → Track A (the easy path)", p: "Yours installs like a normal PC: boot a standard Linux ISO, no Secure Boot bypass, no patched kernel. Wi-Fi drivers are the only real chore.", label: "Go to Track A", href: "#track-a" },
+    b: { h: "T2 Mac → Track B (the Fedora walkthrough)", p: "Yours has Apple's T2 chip, so it needs the t2linux Fedora ISO and a few extra steps. Everything you need is in the walkthrough below.", label: "Go to Track B", href: "#track-b" },
+    s: { h: "Apple Silicon → this isn't your guide", p: "M-series Macs are a different world. The Asahi Linux project is who you want — they've done exceptional work there.", label: "Visit Asahi Linux", href: "https://asahilinux.org", ext: true }
+  };
+  var verdict = document.getElementById('verdict');
+  var vh = document.getElementById('verdict-h');
+  var vp = document.getElementById('verdict-p');
+  var va = document.getElementById('verdict-a');
+  document.querySelectorAll('.choice').forEach(function (c) {
+    c.addEventListener('click', function () {
+      document.querySelectorAll('.choice').forEach(function (x) { x.classList.remove('selected'); });
+      c.classList.add('selected');
+      var d = data[c.getAttribute('data-result')];
+      vh.textContent = d.h; vp.textContent = d.p; va.textContent = d.label; va.href = d.href;
+      if (d.ext) { va.target = '_blank'; va.rel = 'noopener'; va.classList.add('ghost'); }
+      else { va.removeAttribute('target'); va.classList.remove('ghost'); }
+      verdict.classList.add('open');
+    });
+  });
+
+  // ---- TOC scrollspy ----
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function (l) { var id = l.getAttribute('href').slice(1); var el = document.getElementById(id); if (el) map[id] = l; });
+  var targets = Object.keys(map).map(function (id) { return document.getElementById(id); });
+  if ('IntersectionObserver' in window) {
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (l) { l.classList.remove('active'); });
+          if (map[e.target.id]) map[e.target.id].classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px', threshold: 0 });
+    targets.forEach(function (t) { obs.observe(t); });
+  }
+})();
+</script>
+</body>
+</html>
